@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>منشئ الإذاعة المدرسية الذكي</title>
+  
+  <!-- Tailwind CSS للتنسيق المتجاوب -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- مكتبة تحويل النصوص إلى PDF منسق -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Tajawal', sans-serif; -webkit-tap-highlight-color: transparent; }
+    textarea { resize: vertical; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+  <!-- شريط التنقل العلوي المتوافق مع الجوال -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
+    <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
+      <div class="flex items-center gap-2">
+        <span class="text-xl">🎙️</span>
+        <h1 class="text-base sm:text-lg font-bold text-indigo-600">إذاعتي الذكية</h1>
+      </div>
+      <button id="openKeyModal" class="text-xs bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 px-2.5 py-1.5 rounded-lg border border-slate-300 transition">
+        🔑 مفتاح API
+      </button>
+    </div>
+  </header>
+
+  <!-- جسم التطبيق -->
+  <main class="flex-1 max-w-4xl w-full mx-auto p-4 sm:p-6">
+    
+    <!-- 1. الشاشة الرئيسية: قائمة الإذاعات المنشأة -->
+    <section id="homeView">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-5">
+        <div>
+          <h2 class="text-xl sm:text-2xl font-bold">الإذاعات المدرسية</h2>
+          <p class="text-xs sm:text-sm text-slate-500">سجل الإذاعات المحفوظة في متصفحك</p>
+        </div>
+        <button id="btnNewRadio" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 active:scale-98 text-white font-medium px-5 py-2.5 rounded-xl shadow-sm transition text-center text-sm">
+          + إنشاء إذاعة جديدة
+        </button>
+      </div>
+
+      <div id="radiosList" class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+        <!-- تظهر بطاقات الإذاعات هنا تلقائياً -->
+      </div>
+    </section>
+
+    <!-- 2. شاشة إنشاء إذاعة جديدة -->
+    <section id="createView" class="hidden">
+      <div class="flex items-center mb-4">
+        <button class="btnBack text-sm text-indigo-600 font-bold p-1 flex items-center gap-1 active:opacity-70">
+          <span>&larr;</span> <span>الرجوع للقائمة</span>
+        </button>
+      </div>
+
+      <div class="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+        <h3 class="text-lg font-bold text-slate-800">بيانات الإذاعة</h3>
+        
+        <!-- حقل الموضوع -->
+        <div>
+          <label class="block text-xs sm:text-sm font-semibold mb-1.5 text-slate-700">موضوع الإذاعة</label>
+          <input type="text" id="topicInput" class="w-full border border-slate-300 rounded-xl p-3 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" placeholder="مثلاً: يوم التأسيس، ترشيد استهلاك المياه، بر الوالدين">
+        </div>
+
+        <!-- الفقرات والطلاب -->
+        <div>
+          <div class="flex justify-between items-center mb-2">
+            <label class="block text-xs sm:text-sm font-semibold text-slate-700">الفقرات والمشاركون</label>
+            <button id="addSegmentBtn" type="button" class="text-xs bg-indigo-50 text-indigo-700 font-bold px-2.5 py-1 rounded-md border border-indigo-200">
+              + إضافة فقرة
+            </button>
+          </div>
+          <div id="segmentsContainer" class="space-y-2.5">
+            <!-- حقول الفقرات المضافة ديناميكياً -->
+          </div>
+        </div>
+
+        <!-- زر التوليد -->
+        <button id="generateBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 active:scale-98 text-white py-3 rounded-xl font-bold transition text-sm flex justify-center items-center gap-2 mt-4 shadow-sm">
+          <span>توليد الإذاعة بواسطة 3.5 Flash-Lite</span>
+          <span id="loader" class="hidden animate-spin">⏳</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- 3. شاشة قراءة، تعديل وتصدير الإذاعة -->
+    <section id="detailView" class="hidden space-y-3">
+      <!-- أزرار الإجراءات المتوافقة مع الشاشات الصغيرة -->
+      <div class="flex flex-wrap justify-between items-center gap-2 bg-white p-3 rounded-xl border border-slate-200">
+        <button class="btnBack text-xs sm:text-sm text-indigo-600 font-bold active:opacity-70">
+          &larr; القائمة
+        </button>
+        <div class="flex items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0 justify-end">
+          <button id="saveEditBtn" class="flex-1 sm:flex-initial bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-medium px-4 py-2 rounded-lg transition text-center">
+            💾 حفظ
+          </button>
+          <button id="exportPdfBtn" class="flex-1 sm:flex-initial bg-slate-900 hover:bg-black text-white text-xs sm:text-sm font-medium px-4 py-2 rounded-lg transition text-center">
+            📄 تحميل PDF
+          </button>
+        </div>
+      </div>
+
+      <!-- محرر ومستعرض النص -->
+      <div class="bg-white p-4 sm:p-8 rounded-2xl border border-slate-200 shadow-sm">
+        <label class="block text-xs text-slate-400 mb-1">عنوان الموضوع</label>
+        <input type="text" id="radioTitleView" class="text-lg sm:text-2xl font-bold w-full border-b border-slate-200 pb-2 mb-4 outline-none focus:border-indigo-500 text-slate-800">
+        
+        <label class="block text-xs text-slate-400 mb-1">محتوى الإذاعة (يمكنك تعديل أي سطر مباشرة)</label>
+        <textarea id="radioContentView" rows="15" class="w-full border border-slate-200 rounded-xl p-3 sm:p-4 text-slate-700 leading-relaxed outline-none focus:border-indigo-500 text-sm font-sans"></textarea>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
